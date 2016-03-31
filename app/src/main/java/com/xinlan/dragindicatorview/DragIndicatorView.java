@@ -9,7 +9,6 @@ import android.graphics.Paint;
 import android.graphics.drawable.AnimationDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
-import android.support.v4.view.ViewCompat;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.TypedValue;
@@ -27,6 +26,7 @@ import android.widget.TextView;
  */
 public class DragIndicatorView extends TextView {
     private static int DRAW_COLOR = Color.RED;
+    private static int DEFAULT_DISTANCE = 200;
     private Paint mPaint;
     private int mRadius = 0;
 
@@ -37,6 +37,8 @@ public class DragIndicatorView extends TextView {
 
     private float mDx = 0;
     private float mDy = 0;
+
+    private int mDismissDetectDistance = DEFAULT_DISTANCE;//超过此距离 判定为让提示View消失
 
     private ViewGroup mRootView;//根布局视图 作为画板使用
     private DragIndicatorView mCloneView;
@@ -115,6 +117,8 @@ public class DragIndicatorView extends TextView {
                 //System.out.println("down");
                 mDx = event.getX();
                 mDy = event.getY();
+                mOriginX = event.getRawX() - mDx + (getWidth() >> 1);
+                mOriginY = event.getRawY() - mDy + (getHeight() >> 1);
                 break;
             case MotionEvent.ACTION_MOVE:
                 //System.out.println("move");
@@ -129,16 +133,25 @@ public class DragIndicatorView extends TextView {
                     mCloneView.setY(event.getRawY() - mDy);
                     mCloneView.invalidate();
                 }
+
                 break;
             case MotionEvent.ACTION_CANCEL:
             case MotionEvent.ACTION_UP:
                 //System.out.println("up");
-
                 if (mCloneView != null) {
                     mRootView.removeView(mCloneView);
                     mCloneView = null;
                 }
-                killView(event.getRawX(), event.getRawY());
+
+                //判断是否dismiss View
+                float deltaX = event.getRawX() - mOriginX;
+                float deltaY = event.getRawY() - mOriginY;
+                if (Math.sqrt(deltaX * deltaX + deltaY * deltaY) >= mDismissDetectDistance) {//超过拉力的极限距离
+                    killView(event.getRawX(), event.getRawY());
+                } else {//未超过极限
+                    // TODO: 2016/3/31 显示回弹效果动画  恢复View可见
+                    setVisibility(View.VISIBLE);
+                }//end if
                 break;
         }//end switch
         return true;
