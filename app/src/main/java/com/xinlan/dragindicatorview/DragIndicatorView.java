@@ -138,12 +138,13 @@ public class DragIndicatorView extends TextView {
                     mRootView.addView(mCloneView, getLayoutParams());
                 }//end if
 
+                //TODO 拉伸水滴效果
+
                 if (mCloneView != null) {
                     mCloneView.setX(event.getRawX() - mDx);
                     mCloneView.setY(event.getRawY() - mDy);
                     mCloneView.invalidate();
                 }
-
                 break;
             case MotionEvent.ACTION_CANCEL:
             case MotionEvent.ACTION_UP:
@@ -160,6 +161,7 @@ public class DragIndicatorView extends TextView {
                     killView(event.getRawX(), event.getRawY());
                 } else {//未超过极限
                     // TODO: 2016/3/31 显示回弹效果动画  恢复View可见
+
                     setVisibility(View.VISIBLE);
                 }//end if
 
