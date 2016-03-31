@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animation-list xmlns:android="http://schemas.android.com/apk/res/android"
+    android:oneshot="true">
+    <item
+        android:drawable="@drawable/clean_1"
+        android:duration="120" />
+    <item
+        android:drawable="@drawable/clean_2"
+        android:duration="120" />
+    <item
+        android:drawable="@drawable/clean_3"
+        android:duration="120" />
+    <item
+        android:drawable="@drawable/clean_4"
+        android:duration="120" />
+    <item
+        android:drawable="@drawable/clean_5"
+        android:duration="120" />
+    <item
+        android:drawable="@android:color/transparent"
+        android:duration="120" />
+</animation-list>
