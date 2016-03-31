@@ -33,7 +33,7 @@
             android:layout_gravity="center_vertical"
             android:background="#ff0000"
             android:padding="6dp"
-            android:text="811"
+            android:text="8"
             android:textColor="#ffffff"
             android:textSize="10sp"/>
     </LinearLayout>

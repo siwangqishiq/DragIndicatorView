@@ -16,6 +16,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -42,6 +43,7 @@ public class DragIndicatorView extends TextView {
 
     private ViewGroup mRootView;//根布局视图 作为画板使用
     private DragIndicatorView mCloneView;
+    private ViewParent mParentView;
 
     public DragIndicatorView(Context context) {
         super(context);
@@ -61,6 +63,7 @@ public class DragIndicatorView extends TextView {
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     public DragIndicatorView(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
+        ;
         initView(context);
     }
 
@@ -115,6 +118,13 @@ public class DragIndicatorView extends TextView {
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 //System.out.println("down");
+                if (mParentView != null) {
+                    mParentView = getScrollableParent();
+                }
+                if (mParentView != null) {//屏蔽父控件的事件响应
+                    mParentView.requestDisallowInterceptTouchEvent(true);
+                }
+
                 mDx = event.getX();
                 mDy = event.getY();
                 mOriginX = event.getRawX() - mDx + (getWidth() >> 1);
@@ -152,18 +162,47 @@ public class DragIndicatorView extends TextView {
                     // TODO: 2016/3/31 显示回弹效果动画  恢复View可见
                     setVisibility(View.VISIBLE);
                 }//end if
+
+                if (mParentView != null) {//恢复父控件对事件的处理
+                    mParentView.requestDisallowInterceptTouchEvent(false);
+                }
                 break;
         }//end switch
         return true;
     }
 
     /**
+     * 获得父控件
+     *
+     * @return
+     */
+    private ViewGroup getScrollableParent() {
+        View target = this;
+        while (true) {
+            View parent;
+            try {
+                parent = (View) target.getParent();
+            } catch (Exception e) {
+                return null;
+            }
+            if (parent == null)
+                return null;
+            if (parent instanceof ViewGroup) {
+                return (ViewGroup) parent;
+            }
+            target = parent;
+        }//end while
+    }
+
+    /**
      * 手动控制  提示按钮按钮不可见
      */
     public void dismissView() {
-        int[] screens = new int[2];
-        getLocationOnScreen(screens);
-        killView(screens[0] + (getWidth() >> 1), screens[1] + (getHeight() >> 1));
+        if (getVisibility() == View.VISIBLE) {
+            int[] screens = new int[2];
+            getLocationOnScreen(screens);
+            killView(screens[0] + (getWidth() >> 1), screens[1] + (getHeight() >> 1));
+        }//end if
     }
 
     protected void killView(final float x, final float y) {
@@ -178,8 +217,21 @@ public class DragIndicatorView extends TextView {
                 imageView.setY(y - (imageView.getMeasuredHeight() >> 1));
             }
         });
+
         AnimationDrawable animationDrawable = (AnimationDrawable) imageView.getDrawable();
+        int totalDuring = 0;
+        for (int i = 0, len = animationDrawable.getNumberOfFrames(); i < len; i++) {
+            totalDuring += animationDrawable.getDuration(i);
+        }
         animationDrawable.start();
+
+        //动画播放结束后 移除ImageView
+        postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                mRootView.removeView(imageView);
+            }
+        }, totalDuring + 20);
 
         setVisibility(View.GONE);
     }
