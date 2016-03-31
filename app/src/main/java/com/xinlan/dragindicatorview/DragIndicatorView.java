@@ -27,7 +27,7 @@ import android.widget.TextView;
  */
 public class DragIndicatorView extends TextView {
     private static int DRAW_COLOR = Color.RED;
-    private static int DEFAULT_DISTANCE = 200;
+    //private static int DEFAULT_DISTANCE = 200;
     private Paint mPaint;
     private int mRadius = 0;
 
@@ -39,11 +39,12 @@ public class DragIndicatorView extends TextView {
     private float mDx = 0;
     private float mDy = 0;
 
-    private int mDismissDetectDistance = DEFAULT_DISTANCE;//超过此距离 判定为让提示View消失
+    //private int mDismissDetectDistance = DEFAULT_DISTANCE;//超过此距离 判定为让提示View消失
 
     private ViewGroup mRootView;//根布局视图 作为画板使用
     private DragIndicatorView mCloneView;
     private ViewParent mParentView;
+    private SpringView mSpringView;
 
     public DragIndicatorView(Context context) {
         super(context);
@@ -63,7 +64,6 @@ public class DragIndicatorView extends TextView {
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     public DragIndicatorView(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
-        ;
         initView(context);
     }
 
@@ -136,15 +136,28 @@ public class DragIndicatorView extends TextView {
                     setVisibility(View.INVISIBLE);
                     mCloneView = cloneSelfView();
                     mRootView.addView(mCloneView, getLayoutParams());
+
+                    mSpringView = new SpringView(this.getContext());
+                    mSpringView.initSpring(mOriginX,mOriginY,mRadius);
+                    mRootView.addView(mSpringView);
                 }//end if
 
-                //TODO 拉伸水滴效果
 
                 if (mCloneView != null) {
                     mCloneView.setX(event.getRawX() - mDx);
                     mCloneView.setY(event.getRawY() - mDy);
                     mCloneView.invalidate();
                 }
+                //TODO 拉伸水滴效果
+
+                if(mSpringView != null){
+                    mSpringView.update(event.getRawX() - mDx,event.getRawY() - mDy);
+
+                    if (mSpringView.radius < 0.2f*mRadius){
+                        mSpringView.radius = 0;
+                    }
+                }
+
                 break;
             case MotionEvent.ACTION_CANCEL:
             case MotionEvent.ACTION_UP:
@@ -157,13 +170,17 @@ public class DragIndicatorView extends TextView {
                 //判断是否dismiss View
                 float deltaX = event.getRawX() - mOriginX;
                 float deltaY = event.getRawY() - mOriginY;
-                if (Math.sqrt(deltaX * deltaX + deltaY * deltaY) >= mDismissDetectDistance) {//超过拉力的极限距离
+                if (mSpringView.radius < 0.2f*mRadius) {//超过拉力的极限距离
                     killView(event.getRawX(), event.getRawY());
                 } else {//未超过极限
                     // TODO: 2016/3/31 显示回弹效果动画  恢复View可见
 
                     setVisibility(View.VISIBLE);
                 }//end if
+
+                if(mSpringView != null){
+                    mRootView.removeView(mSpringView);
+                }
 
                 if (mParentView != null) {//恢复父控件对事件的处理
                     mParentView.requestDisallowInterceptTouchEvent(false);
@@ -239,7 +256,7 @@ public class DragIndicatorView extends TextView {
     }
 
     /**
-     * '
+     *
      * 产生一个自己的备份
      *
      * @return
@@ -254,4 +271,46 @@ public class DragIndicatorView extends TextView {
         textView.setEnabled(false);
         return textView;
     }
+
+    /**
+     *
+     */
+    private final class SpringView extends View{
+        public float from_x;
+        public float from_y;
+        public float radius;
+        public float to_x;
+        public float to_y;
+
+        public SpringView(Context context) {
+            super(context);
+        }
+
+        public void initSpring(float init_x,float init_y,float r){
+            this.from_x = init_x;
+            this.from_y = init_y;
+            this.to_x = init_x;
+            this.to_y = init_y;
+            this.radius = r;
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            canvas.drawCircle(from_x,from_y,radius,mPaint);
+        }
+
+        public void update(float x,float y){
+            this.to_x = x;
+            this.to_y = y;
+
+            float deltaX = from_x - to_x;
+            float deltaY = from_y - to_y;
+            float distance = (float)Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            //radius = (float)mRadius/(distance + 1);
+            //  r = R - R * (1 -1/d));
+            radius = mRadius - 0.15f * distance;
+            invalidate();
+        }
+    }//end inner class
+
 }//end class
