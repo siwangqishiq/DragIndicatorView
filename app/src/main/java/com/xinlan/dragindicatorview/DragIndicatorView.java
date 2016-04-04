@@ -6,6 +6,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.drawable.AnimationDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
@@ -134,12 +135,13 @@ public class DragIndicatorView extends TextView {
                 //System.out.println("move");
                 if (getVisibility() == View.VISIBLE) {
                     setVisibility(View.INVISIBLE);
-                    mCloneView = cloneSelfView();
-                    mRootView.addView(mCloneView, getLayoutParams());
 
                     mSpringView = new SpringView(this.getContext());
-                    mSpringView.initSpring(mOriginX,mOriginY,mRadius);
+                    mSpringView.initSpring(mOriginX,mOriginY,mRadius,getWidth(),getHeight());
                     mRootView.addView(mSpringView);
+
+                    mCloneView = cloneSelfView();
+                    mRootView.addView(mCloneView, getLayoutParams());
                 }//end if
 
 
@@ -149,13 +151,10 @@ public class DragIndicatorView extends TextView {
                     mCloneView.invalidate();
                 }
                 //TODO 拉伸水滴效果
-
                 if(mSpringView != null){
+                    //更新弹性控件
                     mSpringView.update(event.getRawX() - mDx,event.getRawY() - mDy);
 
-                    if (mSpringView.radius < 0.2f*mRadius){
-                        mSpringView.radius = 0;
-                    }
                 }
 
                 break;
@@ -282,26 +281,41 @@ public class DragIndicatorView extends TextView {
         public float to_x;
         public float to_y;
 
+        public float toWidth;
+        public float toHeight;
+
+        private Path mPath = new Path();
+
         public SpringView(Context context) {
             super(context);
         }
 
-        public void initSpring(float init_x,float init_y,float r){
+        public void initSpring(float init_x,float init_y,float r,float w,float h){
             this.from_x = init_x;
             this.from_y = init_y;
             this.to_x = init_x;
             this.to_y = init_y;
             this.radius = r;
+
+            this.toWidth = w;
+            this.toHeight = h;
         }
 
         @Override
         protected void onDraw(Canvas canvas) {
-            canvas.drawCircle(from_x,from_y,radius,mPaint);
+            if(radius > 0){
+                canvas.drawPath(mPath,mPaint);//draw path
+                canvas.drawCircle(from_x,from_y,radius,mPaint);
+            }//end if
         }
 
         public void update(float x,float y){
             this.to_x = x;
             this.to_y = y;
+
+            //目的圆 球心坐标
+            float dest_x = to_x + toWidth / 2;
+            float dest_y = to_y + toHeight / 2;
 
             float deltaX = from_x - to_x;
             float deltaY = from_y - to_y;
@@ -309,6 +323,38 @@ public class DragIndicatorView extends TextView {
             //radius = (float)mRadius/(distance + 1);
             //  r = R - R * (1 -1/d));
             radius = mRadius - 0.15f * distance;
+            if (mSpringView.radius < 0.2f*mRadius){
+                mSpringView.radius = 0;
+            }
+
+            if(radius > 0 ){
+                // (1 , 0)  (x,y)
+                double cos_delta = deltaX/distance;
+                double angle = Math.acos(cos_delta);
+                double circle_from_thela1 =  angle + Math.PI/2;
+                double circle_from_thela2 =  circle_from_thela1 + Math.PI;
+
+                float circle_from_circle_x1 = (float)(from_x + radius * Math.cos(circle_from_thela1));
+                float circle_from_circle_y1 = (float)(from_y + radius * Math.sin(circle_from_thela1));
+
+                float circle_from_circle_x2 = (float)(from_x + radius * Math.cos(circle_from_thela2));
+                float circle_from_circle_y2 = (float)(from_y + radius * Math.sin(circle_from_thela2));
+
+                float circle_to_circle_x1 = (float)(dest_x + mRadius * Math.cos(circle_from_thela1));
+                float circle_to_circle_y1 = (float)(dest_y + mRadius * Math.sin(circle_from_thela1));
+
+                float circle_to_circle_x2 = (float)(dest_x + mRadius * Math.cos(circle_from_thela2));
+                float circle_to_circle_y2 = (float)(dest_y + mRadius * Math.sin(circle_from_thela2));
+
+                mPath.reset();
+                mPath.moveTo(circle_from_circle_x1, circle_from_circle_y1);
+                mPath.lineTo(circle_from_circle_x2, circle_from_circle_y2);
+                //mPath.lineTo(dest_x,dest_y);
+                mPath.lineTo(circle_to_circle_x2,circle_to_circle_y2);
+                mPath.lineTo(circle_to_circle_x1,circle_to_circle_y1);
+                mPath.close();
+            }
+
             invalidate();
         }
     }//end inner class

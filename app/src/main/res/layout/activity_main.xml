@@ -35,7 +35,7 @@
             android:padding="6dp"
             android:text="8"
             android:textColor="#ffffff"
-            android:textSize="10sp"/>
+            android:textSize="14sp"/>
     </LinearLayout>
 
     <Button
