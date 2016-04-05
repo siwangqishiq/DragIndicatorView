@@ -29,9 +29,11 @@ import android.widget.TextView;
 public class DragIndicatorView extends TextView {
     private static int DRAW_COLOR = Color.RED;
     //private static int DEFAULT_DISTANCE = 200;
+    private static float DEFAULT_VISCOUS_VALUE = 0.15f;//粘滞系数
+
     private Paint mPaint;
     private int mRadius = 0;
-
+    private float mViscous = DEFAULT_VISCOUS_VALUE;
     private float mOriginX = 0;
     private float mOriginY = 0;
     private int mCenterX = 0;
@@ -46,6 +48,8 @@ public class DragIndicatorView extends TextView {
     private DragIndicatorView mCloneView;
     private ViewParent mParentView;
     private SpringView mSpringView;
+
+    private OnIndicatorDismiss mOnDismissAction;
 
     public DragIndicatorView(Context context) {
         super(context);
@@ -73,6 +77,7 @@ public class DragIndicatorView extends TextView {
 
         mPaint = new Paint();
         mPaint.setColor(DRAW_COLOR);
+        mPaint.setAntiAlias(true);
 
         if (context instanceof Activity) {
             mRootView = (ViewGroup) ((Activity) context).getWindow().getDecorView();
@@ -152,35 +157,34 @@ public class DragIndicatorView extends TextView {
                     mCloneView.setY(event.getRawY() - mDy);
                     mCloneView.invalidate();
                 }
-                //TODO 拉伸水滴效果
+                //拉伸水滴效果
                 if (mSpringView != null) {
                     //更新弹性控件
                     mSpringView.update(event.getRawX() - mDx, event.getRawY() - mDy);
-
                 }
 
                 break;
             case MotionEvent.ACTION_CANCEL:
             case MotionEvent.ACTION_UP:
                 //System.out.println("up");
-                if (mCloneView != null) {
-                    mRootView.removeView(mCloneView);
-                    mCloneView = null;
-                }
-
                 //判断是否dismiss View
-                float deltaX = event.getRawX() - mOriginX;
-                float deltaY = event.getRawY() - mOriginY;
-                if (mSpringView.radius < 0.2f * mRadius) {//超过拉力的极限距离
+                if (mSpringView != null && mSpringView.radius <= 0) {
                     killView(event.getRawX(), event.getRawY());
-                } else {//未超过极限
-                    // TODO: 2016/3/31 显示回弹效果动画  恢复View可见
-
-                    setVisibility(View.VISIBLE);
-                }//end if
-
-                if (mSpringView != null) {
                     mRootView.removeView(mSpringView);
+                    mSpringView = null;
+
+                    if (mCloneView != null) {
+                        mRootView.removeView(mCloneView);
+                        mCloneView = null;
+                    }
+                } else {//不取消
+                    // TODO: 2016/3/31 显示回弹效果动画  恢复View可见
+                    //setVisibility(View.VISIBLE);
+                    if (mSpringView != null && mSpringView.spring_len > 1f) {//存在弹性势能  显示弹性动画效果
+                        mSpringView.startSpringAction();
+                    } else {
+                        resetView();
+                    }
                 }
 
                 if (mParentView != null) {//恢复父控件对事件的处理
@@ -189,6 +193,16 @@ public class DragIndicatorView extends TextView {
                 break;
         }//end switch
         return true;
+    }
+
+    private void resetView() {
+        if (mCloneView != null) {
+            mRootView.removeView(mCloneView);
+        }
+        if (mSpringView != null) {
+            mRootView.removeView(mSpringView);
+        }
+        setVisibility(View.VISIBLE);
     }
 
     /**
@@ -253,6 +267,10 @@ public class DragIndicatorView extends TextView {
             }
         }, totalDuring + 20);
 
+        if (mOnDismissAction != null) {
+            mOnDismissAction.OnDismiss(this);
+        }
+
         setVisibility(View.GONE);
     }
 
@@ -273,6 +291,28 @@ public class DragIndicatorView extends TextView {
     }
 
     /**
+     * 获取粘滞系数
+     *
+     * @return
+     */
+    public float getViscous() {
+        return mViscous;
+    }
+
+    /**
+     * 设置粘滞系数
+     *
+     * @param mViscous
+     */
+    public void setViscous(float mViscous) {
+        this.mViscous = mViscous;
+    }
+
+    public interface OnIndicatorDismiss {
+        void OnDismiss(DragIndicatorView view);
+    }
+
+    /**
      *
      */
     private final class SpringView extends View {
@@ -286,9 +326,16 @@ public class DragIndicatorView extends TextView {
         public float toHeight;
 
         private Path mPath = new Path();
+        boolean isSpringAction = false;
+        float cur_x;
+        float cur_y;
+        float spring_len = 0;
+        float origin_len = 0;
+
 
         public SpringView(Context context) {
             super(context);
+            isSpringAction = false;
         }
 
         public void initSpring(float init_x, float init_y, float r, float w, float h) {
@@ -304,11 +351,16 @@ public class DragIndicatorView extends TextView {
 
         @Override
         protected void onDraw(Canvas canvas) {
-            if (radius > 0) {
+            if (isSpringAction) {
+                springLogic();
+                canvas.drawPath(mPath, mPaint);//draw path
+                canvas.drawCircle(from_x, from_y, radius, mPaint);
+            } else if (radius > 0) {
                 canvas.drawPath(mPath, mPaint);//draw path
                 canvas.drawCircle(from_x, from_y, radius, mPaint);
             }//end if
         }
+
 
         public void update(float x, float y) {
             this.to_x = x;
@@ -317,6 +369,12 @@ public class DragIndicatorView extends TextView {
             //目的圆 球心坐标
             float dest_x = to_x + toWidth / 2;
             float dest_y = to_y + toHeight / 2;
+            updatePosition(dest_x, dest_y);
+        }
+
+        private void updatePosition(final float dest_x, final float dest_y) {
+            this.cur_x = dest_x;
+            this.cur_y = dest_y;
 
             float deltaX = 0;
             float deltaY = 0;
@@ -331,9 +389,9 @@ public class DragIndicatorView extends TextView {
             float distance = (float) Math.sqrt(deltaX * deltaX + deltaY * deltaY);
             //radius = (float)mRadius/(distance + 1);
             //  r = R - R * (1 -1/d));
-            radius = mRadius - 0.15f * distance;
-            if (mSpringView.radius < 0.2f * mRadius) {
-                mSpringView.radius = 0;
+            radius = mRadius - mViscous * distance;
+            if (radius < 0.2f * mRadius) {
+                radius = 0;
             }
 
             if (radius > 0) {
@@ -366,9 +424,38 @@ public class DragIndicatorView extends TextView {
                 mPath.quadTo((from_x + dest_x) / 2, (from_y + dest_y) / 2,
                         circle_from_circle_x1, circle_from_circle_y1);
                 mPath.close();
+
+                if (mCloneView != null) {
+                    mCloneView.setX(cur_x - toWidth / 2);
+                    mCloneView.setY(cur_y - toHeight / 2);
+                }
+
+                spring_len = distance;
+            } else {
+                spring_len = 0;
             }
 
             invalidate();
+        }
+
+        int index = 0;
+        float[] spring_pos_x[];
+        float[] spring_pos_y[];
+
+        /**
+         * 做回弹操作
+         */
+        public void startSpringAction() {
+            isSpringAction = true;
+            origin_len = spring_len;
+            postInvalidate();
+        }
+
+        public void springLogic() {
+            cur_x++;
+            cur_y++;
+            updatePosition(cur_x, cur_y);
+            postInvalidate();
         }
     }//end inner class
 
