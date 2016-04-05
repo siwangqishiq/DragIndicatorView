@@ -74,7 +74,9 @@ public class DragIndicatorView extends TextView {
         mPaint = new Paint();
         mPaint.setColor(DRAW_COLOR);
 
-        mRootView = (ViewGroup) ((Activity) context).getWindow().getDecorView();
+        if (context instanceof Activity) {
+            mRootView = (ViewGroup) ((Activity) context).getWindow().getDecorView();
+        }
         //System.out.println("init View");
 
     }
@@ -137,7 +139,7 @@ public class DragIndicatorView extends TextView {
                     setVisibility(View.INVISIBLE);
 
                     mSpringView = new SpringView(this.getContext());
-                    mSpringView.initSpring(mOriginX,mOriginY,mRadius,getWidth(),getHeight());
+                    mSpringView.initSpring(mOriginX, mOriginY, mRadius, getWidth(), getHeight());
                     mRootView.addView(mSpringView);
 
                     mCloneView = cloneSelfView();
@@ -151,9 +153,9 @@ public class DragIndicatorView extends TextView {
                     mCloneView.invalidate();
                 }
                 //TODO 拉伸水滴效果
-                if(mSpringView != null){
+                if (mSpringView != null) {
                     //更新弹性控件
-                    mSpringView.update(event.getRawX() - mDx,event.getRawY() - mDy);
+                    mSpringView.update(event.getRawX() - mDx, event.getRawY() - mDy);
 
                 }
 
@@ -169,7 +171,7 @@ public class DragIndicatorView extends TextView {
                 //判断是否dismiss View
                 float deltaX = event.getRawX() - mOriginX;
                 float deltaY = event.getRawY() - mOriginY;
-                if (mSpringView.radius < 0.2f*mRadius) {//超过拉力的极限距离
+                if (mSpringView.radius < 0.2f * mRadius) {//超过拉力的极限距离
                     killView(event.getRawX(), event.getRawY());
                 } else {//未超过极限
                     // TODO: 2016/3/31 显示回弹效果动画  恢复View可见
@@ -177,7 +179,7 @@ public class DragIndicatorView extends TextView {
                     setVisibility(View.VISIBLE);
                 }//end if
 
-                if(mSpringView != null){
+                if (mSpringView != null) {
                     mRootView.removeView(mSpringView);
                 }
 
@@ -255,7 +257,6 @@ public class DragIndicatorView extends TextView {
     }
 
     /**
-     *
      * 产生一个自己的备份
      *
      * @return
@@ -274,7 +275,7 @@ public class DragIndicatorView extends TextView {
     /**
      *
      */
-    private final class SpringView extends View{
+    private final class SpringView extends View {
         public float from_x;
         public float from_y;
         public float radius;
@@ -290,7 +291,7 @@ public class DragIndicatorView extends TextView {
             super(context);
         }
 
-        public void initSpring(float init_x,float init_y,float r,float w,float h){
+        public void initSpring(float init_x, float init_y, float r, float w, float h) {
             this.from_x = init_x;
             this.from_y = init_y;
             this.to_x = init_x;
@@ -303,13 +304,13 @@ public class DragIndicatorView extends TextView {
 
         @Override
         protected void onDraw(Canvas canvas) {
-            if(radius > 0){
-                canvas.drawPath(mPath,mPaint);//draw path
-                canvas.drawCircle(from_x,from_y,radius,mPaint);
+            if (radius > 0) {
+                canvas.drawPath(mPath, mPaint);//draw path
+                canvas.drawCircle(from_x, from_y, radius, mPaint);
             }//end if
         }
 
-        public void update(float x,float y){
+        public void update(float x, float y) {
             this.to_x = x;
             this.to_y = y;
 
@@ -317,41 +318,53 @@ public class DragIndicatorView extends TextView {
             float dest_x = to_x + toWidth / 2;
             float dest_y = to_y + toHeight / 2;
 
-            float deltaX = from_x - to_x;
-            float deltaY = from_y - to_y;
-            float distance = (float)Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            float deltaX = 0;
+            float deltaY = 0;
+            if (dest_y >= from_y) {
+                deltaX = dest_x - from_x;
+                deltaY = dest_y - from_y;
+            } else {
+                deltaX = from_x - dest_x;
+                deltaY = from_y - dest_y;
+            }//end if
+
+            float distance = (float) Math.sqrt(deltaX * deltaX + deltaY * deltaY);
             //radius = (float)mRadius/(distance + 1);
             //  r = R - R * (1 -1/d));
             radius = mRadius - 0.15f * distance;
-            if (mSpringView.radius < 0.2f*mRadius){
+            if (mSpringView.radius < 0.2f * mRadius) {
                 mSpringView.radius = 0;
             }
 
-            if(radius > 0 ){
+            if (radius > 0) {
                 // (1 , 0)  (x,y)
-                double cos_delta = deltaX/distance;
+                double cos_delta = deltaX / distance;
                 double angle = Math.acos(cos_delta);
-                double circle_from_thela1 =  angle + Math.PI/2;
-                double circle_from_thela2 =  circle_from_thela1 + Math.PI;
+                double circle_from_thela1 = angle + Math.PI / 2;
+                double circle_from_thela2 = circle_from_thela1 + Math.PI;
 
-                float circle_from_circle_x1 = (float)(from_x + radius * Math.cos(circle_from_thela1));
-                float circle_from_circle_y1 = (float)(from_y + radius * Math.sin(circle_from_thela1));
+                float circle_from_circle_x1 = (float) (from_x + radius * Math.cos(circle_from_thela1));
+                float circle_from_circle_y1 = (float) (from_y + radius * Math.sin(circle_from_thela1));
 
-                float circle_from_circle_x2 = (float)(from_x + radius * Math.cos(circle_from_thela2));
-                float circle_from_circle_y2 = (float)(from_y + radius * Math.sin(circle_from_thela2));
+                float circle_from_circle_x2 = (float) (from_x + radius * Math.cos(circle_from_thela2));
+                float circle_from_circle_y2 = (float) (from_y + radius * Math.sin(circle_from_thela2));
 
-                float circle_to_circle_x1 = (float)(dest_x + mRadius * Math.cos(circle_from_thela1));
-                float circle_to_circle_y1 = (float)(dest_y + mRadius * Math.sin(circle_from_thela1));
+                float circle_to_circle_x1 = (float) (dest_x + mRadius * Math.cos(circle_from_thela1));
+                float circle_to_circle_y1 = (float) (dest_y + mRadius * Math.sin(circle_from_thela1));
 
-                float circle_to_circle_x2 = (float)(dest_x + mRadius * Math.cos(circle_from_thela2));
-                float circle_to_circle_y2 = (float)(dest_y + mRadius * Math.sin(circle_from_thela2));
+                float circle_to_circle_x2 = (float) (dest_x + mRadius * Math.cos(circle_from_thela2));
+                float circle_to_circle_y2 = (float) (dest_y + mRadius * Math.sin(circle_from_thela2));
 
                 mPath.reset();
                 mPath.moveTo(circle_from_circle_x1, circle_from_circle_y1);
                 mPath.lineTo(circle_from_circle_x2, circle_from_circle_y2);
+                mPath.quadTo((from_x + dest_x) / 2, (from_y + dest_y) / 2,
+                        circle_to_circle_x2, circle_to_circle_y2);
                 //mPath.lineTo(dest_x,dest_y);
-                mPath.lineTo(circle_to_circle_x2,circle_to_circle_y2);
-                mPath.lineTo(circle_to_circle_x1,circle_to_circle_y1);
+                //mPath.lineTo(circle_to_circle_x2, circle_to_circle_y2);
+                mPath.lineTo(circle_to_circle_x1, circle_to_circle_y1);
+                mPath.quadTo((from_x + dest_x) / 2, (from_y + dest_y) / 2,
+                        circle_from_circle_x1, circle_from_circle_y1);
                 mPath.close();
             }
 
