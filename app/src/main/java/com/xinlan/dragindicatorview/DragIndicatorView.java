@@ -1,5 +1,8 @@
 package com.xinlan.dragindicatorview;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ValueAnimator;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
@@ -18,6 +21,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
+import android.view.animation.OvershootInterpolator;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -332,6 +336,7 @@ public class DragIndicatorView extends TextView {
         float spring_len = 0;
         float origin_len = 0;
 
+        ValueAnimator mSpringAnimation;
 
         public SpringView(Context context) {
             super(context);
@@ -351,11 +356,7 @@ public class DragIndicatorView extends TextView {
 
         @Override
         protected void onDraw(Canvas canvas) {
-            if (isSpringAction) {
-                springLogic();
-                canvas.drawPath(mPath, mPaint);//draw path
-                canvas.drawCircle(from_x, from_y, radius, mPaint);
-            } else if (radius > 0) {
+            if (radius > 0) {
                 canvas.drawPath(mPath, mPaint);//draw path
                 canvas.drawCircle(from_x, from_y, radius, mPaint);
             }//end if
@@ -438,23 +439,37 @@ public class DragIndicatorView extends TextView {
             invalidate();
         }
 
-        int index = 0;
-        float[] spring_pos_x[];
-        float[] spring_pos_y[];
-
         /**
          * 做回弹操作
          */
         public void startSpringAction() {
             isSpringAction = true;
             origin_len = spring_len;
-            postInvalidate();
-        }
 
-        public void springLogic() {
-            cur_x++;
-            cur_y++;
-            updatePosition(cur_x, cur_y);
+            if (mSpringAnimation != null) {
+                mSpringAnimation.cancel();
+            }
+            mSpringAnimation = ValueAnimator.ofObject(new PointEvaluator(),
+                    new Point(cur_x, cur_y), new Point(from_x, from_y));
+            mSpringAnimation.setDuration(120);
+            mSpringAnimation.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                @Override
+                public void onAnimationUpdate(ValueAnimator animation) {
+                    Point p = (Point) animation.getAnimatedValue();
+                    updatePosition(p.getX(), p.getY());
+                    //invalidate();
+                }
+            });
+
+            mSpringAnimation.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    resetView();
+                }
+            });
+
+            mSpringAnimation.setInterpolator(new OvershootInterpolator(5));
+            mSpringAnimation.start();
             postInvalidate();
         }
     }//end inner class
