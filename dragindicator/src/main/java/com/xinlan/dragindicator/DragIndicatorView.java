@@ -54,7 +54,6 @@ public class DragIndicatorView extends TextView {
     private DragIndicatorView mCloneView;
     private ViewParent mParentView;
     private SpringView mSpringView;
-
     private OnIndicatorDismiss mOnDismissAction;
 
     public DragIndicatorView(Context context) {
@@ -132,7 +131,7 @@ public class DragIndicatorView extends TextView {
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 //System.out.println("down");
-                if (mParentView != null) {
+                if (mParentView == null) {
                     mParentView = getScrollableParent();
                 }
                 if (mParentView != null) {//屏蔽父控件的事件响应
@@ -316,6 +315,10 @@ public class DragIndicatorView extends TextView {
 
     public interface OnIndicatorDismiss {
         void OnDismiss(DragIndicatorView view);
+    }
+
+    public void setOnDismissAction(OnIndicatorDismiss mOnDismissAction) {
+        this.mOnDismissAction = mOnDismissAction;
     }
 
     /**

@@ -8,6 +8,7 @@ import com.xinlan.dragindicator.DragIndicatorView;
 
 public class MainActivity extends AppCompatActivity {
     private DragIndicatorView mIndiactorView;
+    private DragIndicatorView mOtherView;
     private View mDismssBtn;
     private View mSecondBtn;
 
@@ -17,11 +18,14 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         mIndiactorView = (DragIndicatorView) findViewById(R.id.indiactor_view);
+        mOtherView = (DragIndicatorView) findViewById(R.id.indicator);
+
         mDismssBtn = findViewById(R.id.close_btn);
         mDismssBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 mIndiactorView.dismissView();
+                mOtherView.dismissView();
             }
         });
 
