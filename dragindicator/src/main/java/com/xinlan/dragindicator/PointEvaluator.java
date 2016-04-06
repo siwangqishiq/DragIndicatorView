@@ -1,4 +1,4 @@
-package com.xinlan.dragindicatorview;
+package com.xinlan.dragindicator;
 
 import android.animation.TypeEvaluator;
 

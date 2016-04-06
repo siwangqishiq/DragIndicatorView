@@ -1,4 +1,4 @@
-package com.xinlan.dragindicatorview;
+package com.xinlan.dragindicator;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -24,6 +24,8 @@ import android.view.ViewParent;
 import android.view.animation.OvershootInterpolator;
 import android.widget.ImageView;
 import android.widget.TextView;
+
+import com.xinlan.dragindeocatorview.R;
 
 /**
  * 可拖拽的红点提示

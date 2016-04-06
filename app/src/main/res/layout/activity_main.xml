@@ -27,7 +27,7 @@
             android:layout_weight="1"
             android:text="Hello World!"
             android:textSize="40sp"/>
-        <com.xinlan.dragindicatorview.DragIndicatorView
+        <com.xinlan.dragindicator.DragIndicatorView
             android:id="@+id/indiactor_view"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -39,28 +39,6 @@
             android:textSize="14sp"/>
     </LinearLayout>
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/sub1"
-        android:orientation="horizontal">
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="啦啦啦 德玛西亚"
-            android:textSize="30sp"/>
-        <com.xinlan.dragindicatorview.DragIndicatorView
-            android:id="@+id/indiactor_view2"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical"
-            android:background="#ff0000"
-            android:padding="6dp"
-            android:text="8"
-            android:textColor="#ffffff"
-            android:textSize="14sp"
-            android:visibility="gone"/>
-    </LinearLayout>
 
     <Button
         android:id="@+id/close_btn"
@@ -70,10 +48,10 @@
         android:text="dismiss"/>
 
     <Button
-        android:id="@+id/change_btn"
+        android:id="@+id/second_btn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_alignParentRight="true"
-        android:text="change"/>
+        android:text="next"/>
 </RelativeLayout>

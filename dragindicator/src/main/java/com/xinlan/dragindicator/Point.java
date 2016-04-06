@@ -1,4 +1,4 @@
-package com.xinlan.dragindicatorview;
+package com.xinlan.dragindicator;
 
 /**
  * Created by panyi on 16/4/5.
